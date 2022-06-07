@@ -1,0 +1,114 @@
+import com.rameses.annotations.*;
+import com.rameses.util.*;
+import java.rmi.server.*;
+
+class PaymentOrderService {
+
+	@Service(value="OnlinePaymentOrderService", connection="etracs")
+	def pmtOrderSvc;
+
+	@Service("DateService")
+	def dateSvc;
+
+	@Service("SequenceService") 
+	def seqSvc;
+
+	@Service(dynamic=true)
+	def dynSvc;
+
+	@DataContext("paymentorder") 
+	def pmtOrderEm; 
+	
+	@DataContext("paymentorder_paid") 
+	def po_paid; 
+
+	@DataContext("paymentorder_type") 
+	def poTypeEm;  
+
+	@Env
+	def env;
+
+	@ProxyMethod
+	public def getBarcodePrefix( def conn ) {
+		return 	pmtOrderSvc.getPaymentOrderBarcodeKey( [connection: conn ] );
+	}	
+
+	@ProxyMethod
+	public def initData(def r ) {
+		def locid = env.ORGID;
+		r.objid =  KeyGen.generateAlphanumKey( "", 6 );
+		r.txndate = dateSvc.getServerDate();
+		r.controlno =  locid.padRight( 5, "0" ) + seqSvc.getNextFormattedSeriesA("PAYORDER", 10);
+		r.org = [objid:env.ORGID, name:env.ORGNAME];
+		def cal = Calendar.instance;
+		cal.setTime( r.txndate );
+		cal.add( Calendar.HOUR, 24 );
+		r.expirydate = new java.sql.Timestamp( cal.getTimeInMillis() );
+		r.issuedby = [objid:env.USERID, name:env.FULLNAME];
+
+		return r;
+	}
+
+	@ProxyMethod
+	public def create( def o ) {
+		if(!o.connection) throw new Exception("connection is required");
+		if(!o.typeid) throw new Exception("paymentorder typeid is required");
+		
+		if(!o.paidby) throw new Exception("Paid by is required");
+		if(!o.paidbyaddress) throw new Exception("Paid by address is required");
+		if(!o.items && !o.params) throw new Exception("Items or params is required");
+		if(o.params) {
+			if(!o.refno) throw new Exception("refno is required");
+			if(!o.amount) o.amount = 0;
+		}
+
+		def ct = poTypeEm.find( [objid: o.typeid] ).first();
+		if(!ct)
+			throw new Exception("typeid " + o.typeid + " does not exist in paymentorder_type");
+		o.type = ct;	
+
+		o = initData( o );
+		if(o.items) {
+			o.amount =  NumberUtil.round( o.items.sum{ it.amount } );		
+		}
+		pmtOrderEm.create( o );
+		o.barcode = getBarcodePrefix(o.connection)+":"+o.objid; 
+		return o;
+	}
+
+	@ProxyMethod
+	public def getBilling(o) {
+		def po = pmtOrderEm.find( [objid: o.refno ]).first();
+		if(!po) throw new Exception("Payment order " + o.refno + " not found");
+		def result = [:];
+		result.payer = po.payer;
+		result.paidby = po.paidby;
+		result.paidbyaddress = po.paidbyaddress;
+		result.remarks = po.particulars;
+		result.amount = po.amount;
+		result._paymentorderid = po.objid;
+		result.type = po.type;
+		
+		if( po.items ) {
+			result.items = [];
+			po.items.each {
+				def v = [:];
+				v.item = [objid: it.item.objid, code:it.item.code, title: it.item.title, fund: it.item.fund ];
+				v.amount = it.amount;
+				v.remarks = it.remarks;
+				result.items << v;
+			} 	
+			result.amount = NumberUtil.round( result.items.sum{it.amount} );
+		}	
+		if( po.refno )
+		 result.barcodeid = po.refno;
+		if( po.params) result.barcodeparams = po.params;		
+		return result;
+	}
+
+	@ProxyMethod
+	public void postPayment(def po) {
+		pmtOrderEm.find([objid: po.objid]).delete();
+	}
+
+}

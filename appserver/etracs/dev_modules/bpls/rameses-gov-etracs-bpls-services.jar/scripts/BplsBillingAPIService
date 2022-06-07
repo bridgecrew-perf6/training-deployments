@@ -1,0 +1,14 @@
+import com.rameses.annotations.*;
+
+import java.rmi.server.*;
+import com.rameses.services.extended.*;
+
+class BplsBillingAPIService {
+
+	@ProxyMethod
+	public def getBarcodeInfo( def o ) {
+		throw new Exception("get barcode info " + o);
+	}
+
+
+}
