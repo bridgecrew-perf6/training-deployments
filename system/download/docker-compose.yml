@@ -52,5 +52,3 @@ services:
       - ../../_custom/module-client:/apps/server/public/resources/downloads/modules/custom
 
       - ../../appserver/epayment/client:/apps/server/public/resources/downloads/modules/epayment
-
-      - ../../appserver/market2/module-client:/apps/server/public/resources/downloads/modules/market2
