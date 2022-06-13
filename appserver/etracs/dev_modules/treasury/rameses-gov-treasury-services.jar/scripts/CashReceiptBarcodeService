@@ -48,7 +48,13 @@ public class CashReceiptBarcodeService {
 		else {
 			def poSvc = getPaymentOrderService( bc.connection );
 			result = poSvc.getBilling( [refno: refno] );
-			result.barcodeid = result.refno;
+			if ( result.refno ) {
+				result.barcodeid = result.refno;
+			}
+			if ( result.params ) {
+				result.barcodeparams = result.params;
+			}
+
 			result.collectiontype = collectionTypeEm.find([objid: result.type.collectiontype.objid ]).first();
 		}
 		return result;	
