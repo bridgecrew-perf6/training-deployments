@@ -1,0 +1,12 @@
+==================
+PATCH INSTRUCTIONS
+==================
+
+1. Execute the SQL Script File "01-patch-report-template-receiptlist.sql"
+
+2. Copy the folder "report-files" to "training-deployments/_custom" folder. 
+   Merge and overwrite existing files and folders.
+
+3. You can now test the "receiptlist" template and definition.
+
+4. Done.
