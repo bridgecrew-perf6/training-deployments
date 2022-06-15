@@ -30,3 +30,4 @@ echo '\n==> systemctl status'
 sudo systemctl status docker
 
 echo '\n==> done.'
+sudo adduser $USER docker
