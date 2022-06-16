@@ -17,14 +17,16 @@ class PaymentOrderPersistenceInterceptor {
 	public def afterCreatePaymentOrder(def evt) { 
 		def a = evt.args[0];
 		def result = evt.result;
-		result.txncode = pmtOrderSvc.getBarcodePrefix( a._connection ) + ":" + result.objid;
+		def bc = pmtOrderSvc.getBarcodePrefix( a._connection );
+		result.txncode = bc?.barcodeid + ":" + result.objid;
 	}	
 
 	@After(pattern="PersistenceService.read", eval="#{ args[0]._schemaname == 'paymentorder' }" )
 	public void beforeRead(def evt) {
 		def a = evt.args[0];
 		def result = evt.result;
-		result.txncode = pmtOrderSvc.getBarcodePrefix( a._connection ) + ":" + result.objid;
+		def bc = pmtOrderSvc.getBarcodePrefix( a._connection );
+		result.txncode = bc?.barcodeid + ":" + result.objid;
 	}
 
 }

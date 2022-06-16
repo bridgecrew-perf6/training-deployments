@@ -1,0 +1,75 @@
+import com.rameses.annotations.*;
+
+class OnlinePaymentOrderService {
+	
+	@DataContext( dynamic=true )
+	def dynaEm;
+
+	@Service(dynamic=true)
+	def dynaSvc;
+
+	@Env
+	def env;
+
+	private def getPaymentOrderService(def conn) {
+		if ( conn==null || conn=="default" )	{
+			return dynaSvc.lookup("PaymentOrderService");
+		}	
+		return dynaSvc.lookup("PaymentOrderService", conn);
+	}
+
+
+	@ProxyMethod
+	public def getPaymentOrderBarcodeKey( def o ) {
+		if ( !o.connection ) o.connection = "default";
+
+		def em = dynaEm.lookup('barcode_launcher'); 
+		def bc = em.find([ connection: o.connection ]).where("paymentorder=1").first(); 
+		return bc?.objid; 
+	}
+
+	@ProxyMethod
+	public def getBilling( o ) {
+		if (!o?.refno) throw new Exception("refno is required in getBilling method");
+		if (!(o.refno instanceof String)) throw new Exception("refno must be an instance of String in getBilling method");
+
+		def arr = o.refno.split( ":" );
+		if ( arr.length != 2 ) 
+			throw new Exception("Invalid refno format. It should follow the following format <KEY:REFNO>");
+
+		def barcodekey = arr[0];
+		def refno = arr[1];
+
+		def em = dynaEm.lookup('barcode_launcher')
+		def bc = em.find([ objid: barcodekey ]).first();
+		if ( !bc ) throw new Exception("'" + barcodekey + "' barcode launcher not found");
+
+		if ( bc.paymentorder.toString() != '1' )
+			throw new Exception("'" + barcodekey + "' barcode launcher must be configured as paymentorder=1");
+
+		def svc = getPaymentOrderService( bc.connection );
+		def bill = svc.getBilling([ refno: refno ]); 
+		if ( bill.refno ) {
+			bill.barcodeid = bill.refno;
+			bill.barcodeparams = bill.params;
+		}
+		else if ( !bill.items ) 
+			throw new Exception("No available bill item(s) for payment order "+ refno);
+
+		bill._connection = ( bc.connection ? bc.connection : 'default' );
+		bill.objid = bill._paymentorderid;
+
+		em = dynaEm.lookup('collectiontype');
+		bill.collectiontype = em.find([ objid: bill.type.collectiontype.objid ]).first();
+		return bill; 
+	}
+
+	@ProxyMethod
+	public def postPayment(def o ) {
+		if ( !o.objid ) throw new Exception("Please provide paymentorder objid");
+
+		def svc = getPaymentOrderService( o._connection );  
+		svc.postPayment([ objid: o.objid ]);
+		return [ status: "OK" ];
+	}
+}

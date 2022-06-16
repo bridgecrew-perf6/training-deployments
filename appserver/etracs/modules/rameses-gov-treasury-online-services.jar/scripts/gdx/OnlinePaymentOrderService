@@ -1,0 +1,21 @@
+import com.rameses.annotations.*;
+
+public class OnlinePaymentOrderService {
+
+	@Service( dynamic=true )
+	def dynaSvc;
+
+	@ProxyMethod
+	public def create( data ) { 
+		def svc = dynaSvc.lookup('PaymentOrderService'); 
+		def po = svc.create( data ); 
+		return po;
+	} 
+
+	@ProxyMethod
+	public def getBilling( data ) { 
+		def svc = dynaSvc.lookup('OnlinePaymentOrderService'); 
+		def res = svc.getBilling( data );
+		return res; 
+	}
+}

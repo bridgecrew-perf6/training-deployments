@@ -1,37 +1,33 @@
 import com.rameses.annotations.*;
 import com.rameses.util.*;
-import java.rmi.server.*;
 
 class PaymentOrderService {
-
-	@Service(value="OnlinePaymentOrderService", connection="etracs")
-	def pmtOrderSvc;
-
-	@Service("DateService")
-	def dateSvc;
-
-	@Service("SequenceService") 
-	def seqSvc;
-
-	@Service(dynamic=true)
-	def dynSvc;
 
 	@DataContext("paymentorder") 
 	def pmtOrderEm; 
 	
-	@DataContext("paymentorder_paid") 
-	def po_paid; 
-
 	@DataContext("paymentorder_type") 
 	def poTypeEm;  
+
+	@Service("DateService")
+	def dateSvc;
+
+	@Service(dynamic=true)
+	def dynSvc;
+
+	@Service
+	def self;
 
 	@Env
 	def env;
 
 	@ProxyMethod
 	public def getBarcodePrefix( def conn ) {
-		return 	pmtOrderSvc.getPaymentOrderBarcodeKey( [connection: conn ] );
-	}	
+		// implementation to this method 
+		// is done by an Interceptor and 
+		// barcodeid must be overidden  
+		return [ barcodeid: null ]; 
+	} 
 
 	@ProxyMethod
 	public def initData(def r ) {
@@ -61,16 +57,19 @@ class PaymentOrderService {
 		}
 
 		def ct = poTypeEm.find( [objid: o.typeid] ).first();
-		if(!ct)
+		if ( !ct ) 
 			throw new Exception("typeid " + o.typeid + " does not exist in paymentorder_type");
+
 		o.type = ct;	
 
 		o = initData( o );
-		if(o.items) {
-			o.amount =  NumberUtil.round( o.items.sum{ it.amount } );		
-		}
+		if ( o.items ) { 
+			o.amount =  NumberUtil.round( o.items.sum{ it.amount } );
+		} 
 		pmtOrderEm.create( o );
-		o.barcode = getBarcodePrefix(o.connection)+":"+o.objid; 
+
+		def bc = self.getBarcodePrefix( o.connection ); 
+		o.barcode = bc?.barcodeid +":"+ o.objid; 
 		return o;
 	}
 
@@ -109,5 +108,4 @@ class PaymentOrderService {
 	public void postPayment(def po) {
 		pmtOrderEm.find([objid: po.objid]).delete();
 	}
-
 }

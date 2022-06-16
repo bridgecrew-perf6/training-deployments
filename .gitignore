@@ -8,3 +8,7 @@ Thumbs.db
 updates-dev.xml
 docker-compose-test.yml
 *.mp4
+/appserver/etracs/modules/ext/ctc
+/appserver/etracs/modules/ext/ovs
+/system/download/node/resources/downloads/modules/ctc
+/system/download/node/resources/downloads/modules/ovs

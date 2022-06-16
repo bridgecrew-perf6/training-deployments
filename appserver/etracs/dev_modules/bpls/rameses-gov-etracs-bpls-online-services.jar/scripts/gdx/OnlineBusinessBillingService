@@ -2,14 +2,22 @@ import com.rameses.annotations.*;
 
 public class OnlineBusinessBillingService {
 
-	@Service(value="OnlineBusinessBillingService")
-	def bplsSvc;
+	@Service( dynamic=true )
+	def dynaSvc;
 
 	@ProxyMethod
 	public def getBilling( data ) { 
-		def res = bplsSvc.getBilling( data );
+		def svc = dynaSvc.lookup('OnlineBusinessBillingService'); 
+		def res = svc.getBilling( data );
 		res.info.txntype = 'bpls';
 		res.info.txntypename = 'Business Permit'; 
 		return res; 
 	}
+
+	@ProxyMethod
+	public def createPaymentOrder( data ) { 
+		def svc = dynaSvc.lookup('PaymentOrderService'); 
+		def res = svc.create( data ); 
+		return res; 
+	} 
 }
