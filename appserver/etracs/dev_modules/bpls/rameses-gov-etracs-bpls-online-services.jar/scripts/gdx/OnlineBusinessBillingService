@@ -11,6 +11,9 @@ public class OnlineBusinessBillingService {
 		def res = svc.getBilling( data );
 		res.info.txntype = 'bpls';
 		res.info.txntypename = 'Business Permit'; 
+
+		//DUMMY: should return billtoqtr
+		res.info.billtoqtr = data.qtr ? data.qtr : 4;
 		return res; 
 	}
 
