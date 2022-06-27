@@ -40,6 +40,12 @@ class QueueService {
 	public def fetchNextNumber( o ) {
 		def dd = fetchNextTicket( o ); 
 		return dd.ticketno; 
+	}
+
+	@ProxyMethod 
+	public def generateNextNumber( o ) {
+		def ticketno = fetchNextNumber(o);
+		return [ticketno: ticketno]; 
 	} 
 
 	@ProxyMethod 
